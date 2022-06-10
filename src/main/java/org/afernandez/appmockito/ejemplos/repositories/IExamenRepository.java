@@ -5,5 +5,5 @@ import org.afernandez.appmockito.ejemplos.models.Examen;
 import java.util.List;
 
 public interface IExamenRespository {
-	List<Examen> findAll();
+	List<Examen> findAll() throws InterruptedException;
 }

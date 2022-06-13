@@ -4,6 +4,8 @@ import org.afernandez.appmockito.ejemplos.models.Examen;
 
 import java.util.List;
 
-public interface IExamenRespository {
-	List<Examen> findAll() throws InterruptedException;
+public interface IExamenRepository {
+	List<Examen> findAll() ;
+	//simular guardado
+	Examen guardar(Examen examen);
 }

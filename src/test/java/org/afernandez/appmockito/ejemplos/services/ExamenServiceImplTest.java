@@ -6,10 +6,7 @@ import org.afernandez.appmockito.ejemplos.repositories.IPreguntaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockingDetails;
-import org.mockito.MockitoAnnotations;
+import org.mockito.*;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
@@ -180,5 +177,51 @@ class ExamenServiceImplTest {
 		verify(preguntaRepository).findPreguntasPorExamenId(null);
 	}
 
+	/*
+	Argument matcher es un caracteristica de mockito que te permite saber si coincide el valor real que se pasa por argumento, como service
+	y los comparamos con los definidos en el mock, por ejemplo en el when o en el verify. si lo pasa bien si no falla.
+	 */
+	@Test
+	void testArgumentMatchers(){
+		when(repository.findAll()).thenReturn(Datos.EXAMENES);
+		when(preguntaRepository.findPreguntasPorExamenId(anyLong())).thenReturn(Datos.PREGUNTAS);
+		service.findExamenPorNombreConPreguntas("Matemáticas");
+
+		verify(repository).findAll();
+		verify(preguntaRepository).findPreguntasPorExamenId(argThat(arg -> arg.equals(5L))); // va a comprobar que tenga valor 5 en la id.
+		verify(preguntaRepository).findPreguntasPorExamenId(argThat(arg -> arg != null && arg >= 5L)); // otra forma.
+		verify(preguntaRepository).findPreguntasPorExamenId(eq(5L)); // otra forma.
+	}
+
+	//creamos clase anidada
+	public static class MiArgsMatchers implements ArgumentMatcher<Long>{
+		//ya tenemos una clase personalizada, podria ser externa la clase.
+		private Long argument;
+
+		@Override
+		public boolean matches(Long argument) {
+			this.argument = argument;
+			return argument != null && argument > 0;
+		}
+
+		//podemos personalizar el mensaje de error con el toString
+
+		@Override
+		public String toString() {
+			return "Es para un mensaje personalizado de error " +
+					"que imprime mockito en caso de que falle el test," +
+					 argument + " debe ser un entero positivo";
+		}
+	}
+
+	@Test
+	void testArgumentMatchers2(){
+		when(repository.findAll()).thenReturn(Datos.EXAMENES);
+		when(preguntaRepository.findPreguntasPorExamenId(anyLong())).thenReturn(Datos.PREGUNTAS);
+		service.findExamenPorNombreConPreguntas("Matemáticas");
+
+		verify(repository).findAll();
+		verify(preguntaRepository).findPreguntasPorExamenId(argThat(new MiArgsMatchers())); // otra forma de hacerlo llamando a la clase personalizada que hemos creado.
 
 	}
+}

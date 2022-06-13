@@ -1,4 +1,4 @@
-package org.afernandez.appmockito.ejemplos.services;
+package org.afernandez.appmockito.ejemplos;
 
 import org.afernandez.appmockito.ejemplos.models.Examen;
 

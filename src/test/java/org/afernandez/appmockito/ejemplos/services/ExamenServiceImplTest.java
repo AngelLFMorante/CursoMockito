@@ -1,8 +1,11 @@
 package org.afernandez.appmockito.ejemplos.services;
 
+import org.afernandez.appmockito.ejemplos.Datos;
 import org.afernandez.appmockito.ejemplos.models.Examen;
+import org.afernandez.appmockito.ejemplos.repositories.ExamenRepositoryImpl;
 import org.afernandez.appmockito.ejemplos.repositories.IExamenRepository;
 import org.afernandez.appmockito.ejemplos.repositories.IPreguntaRepository;
+import org.afernandez.appmockito.ejemplos.repositories.PreguntaRepositoryImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,7 +16,6 @@ import org.mockito.stubbing.Answer;
 
 import static org.mockito.Mockito.*;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -33,12 +35,20 @@ class ExamenServiceImplTest {
 	@Mock //le indicamos que es un mock
 	IExamenRepository repository; //este es un repository (mock)
 	@Mock
+	ExamenRepositoryImpl respositoryImpl;
+
+	@Mock
 	IPreguntaRepository preguntaRepository; //este es un repository (mock)
+	@Mock
+	PreguntaRepositoryImpl preguntaRepositoryImpl;
 
 	@InjectMocks //crea la instancia del servicio y crea los dos objetos. Ya no hace falta poner el new ExamenServiceImpl
 	//ya lo hace automático la llamada a los repositories por el constructor.
 			//Antes teniamos IExamenService, pero al ser una interfaz no nos deja, con lo que tenemos que poner la clase Impl
 	ExamenServiceImpl service;//Esto es un servicio
+
+	@Captor
+	ArgumentCaptor<Long> captor;
 
 	@BeforeEach
 	void setUp() {
@@ -214,14 +224,73 @@ class ExamenServiceImplTest {
 		}
 	}
 
+		@Test
+		void testArgumentMatchers2(){
+			when(repository.findAll()).thenReturn(Datos.EXAMENES);
+			when(preguntaRepository.findPreguntasPorExamenId(anyLong())).thenReturn(Datos.PREGUNTAS);
+			service.findExamenPorNombreConPreguntas("Matemáticas");
+
+			verify(repository).findAll();
+			verify(preguntaRepository).findPreguntasPorExamenId(argThat(new MiArgsMatchers())); // otra forma de hacerlo llamando a la clase personalizada que hemos creado.
+
+		}
+
+		//Tambien podemos caputar los argumentos con Argument Captor
+		@Test
+		void testArgumentCaptor(){
+			when(repository.findAll()).thenReturn(Datos.EXAMENES);
+	//		when(preguntaRepository.findPreguntasPorExamenId(anyLong())).thenReturn(Datos.PREGUNTAS);
+			service.findExamenPorNombreConPreguntas("Matemáticas");
+
+			//capturamos, el tipo es Long porque es de tipo Long
+	//		ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class); //esto lo podemos ahcer con anotaciones, por eso esta comentado
+			verify(preguntaRepository).findPreguntasPorExamenId(captor.capture());
+
+			assertEquals(5L, captor.getValue());
+		}
+
+	//este test es para comprobar  los errores cuando un metodo no devuelve nada
+		@Test
+		void testDoThrow(){
+			Examen examen = Datos.EXAMEN;
+			examen.setPreguntas(Datos.PREGUNTAS);
+			//Cuando queremos una excepcion, debemos colocar primero el "hacer excepcion, colocar la calse d la excepcion, luego el when cerramos y invocamos al metodo"
+			doThrow(IllegalArgumentException.class).when(preguntaRepository).guardarVarias(anyList());
+
+			assertThrows(IllegalArgumentException.class, () -> {
+				service.guardar(examen);
+			});
+
+
+		}
+		@Test
+		void testDoAnswer(){
+			when(repository.findAll()).thenReturn(Datos.EXAMENES);
+			//ESto lo comentamos por que lo podemos ahcer con el doAnswer
+//			when(preguntaRepository.findPreguntasPorExamenId(anyLong())).thenReturn(Datos.PREGUNTAS);
+			doAnswer(invocation -> {
+				Long id = invocation.getArgument(0);
+				return id == 5L ? Datos.PREGUNTAS : null;  //para ese examen si es el id 5 le damos las preguntas si no null. algo distinto pero similar a lo que tenemos mas arriba
+			}).when(preguntaRepository).findPreguntasPorExamenId(anyLong());
+
+			Examen examen = service.findExamenPorNombreConPreguntas("Matemáticas");
+			assertEquals(5L, examen.getId());
+			assertEquals("Matemáticas", examen.getNombre());
+		}
+
+		//Hay que tener cuidado con los metodos reales, solo lo utilizaremos si necesitamos crear un metodo real que es una libreria externa etc.
 	@Test
-	void testArgumentMatchers2(){
+	void  testDoCallRealMethod(){
 		when(repository.findAll()).thenReturn(Datos.EXAMENES);
-		when(preguntaRepository.findPreguntasPorExamenId(anyLong())).thenReturn(Datos.PREGUNTAS);
-		service.findExamenPorNombreConPreguntas("Matemáticas");
+		//when(preguntaRepository.findPreguntasPorExamenId(anyLong())).thenReturn(Datos.PREGUNTAS);
+		//si esto lo descomentamos y comentamos el docall veremos que no imprime nada por que ahi lo está simulando y en docall llama al metodo reeal.
 
-		verify(repository).findAll();
-		verify(preguntaRepository).findPreguntasPorExamenId(argThat(new MiArgsMatchers())); // otra forma de hacerlo llamando a la clase personalizada que hemos creado.
+		doCallRealMethod().when(preguntaRepositoryImpl).findPreguntasPorExamenId(anyLong()); // esto no es un simulacro es una llamada real al metodo.
+		//las interfaces al no tener metodo reales no puede invocarlo, porque es una clase abstacta o interfaz, ya que no cuenta de implementacion real.
+		//hay un soutm para que nos salga en la consola si realmente utiliza ese metodo.
 
+		Examen examen = service.findExamenPorNombreConPreguntas("Matemáticas");
+		assertEquals(5L, examen.getId());
+		assertEquals("Matemáticas", examen.getNombre());
 	}
 }

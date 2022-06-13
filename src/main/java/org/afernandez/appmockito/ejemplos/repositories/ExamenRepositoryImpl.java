@@ -1,23 +1,27 @@
 package org.afernandez.appmockito.ejemplos.repositories;
 
+import org.afernandez.appmockito.ejemplos.Datos;
 import org.afernandez.appmockito.ejemplos.models.Examen;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 
 public class ExamenRepositoryImpl implements IExamenRepository {
-
-	@Override //CUANDO APLICAMOS MOCKITO ESTA CLASE DA IGUAL, NO NOS HACE FALTA, PORQUE LO MOCKEAMOS CON LA INTERFAZ
-	public List<Examen> findAll(){
-		return Collections.emptyList(); /*Arrays.asList(
-				new Examen(5L, "Matemáticas"),
-				new Examen(6L, "Lenguaje"),
-				new Examen(7L, "Historia")
-		);*/
+	@Override
+	public List<Examen> findAll()  {
+		try {
+			TimeUnit.SECONDS.sleep(5);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		System.out.println("ExamenRepositoryImpl.findAll");
+		return Datos.EXAMENES;
 	}
 
 	@Override
 	public Examen guardar(Examen examen) {
-		return null;
+		System.out.println("ExamenRepositoryImpl.guardar");
+		return Datos.EXAMEN;
 	}
 }
